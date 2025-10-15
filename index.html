@@ -11,8 +11,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <!-- 
     Application Update:
-    - Music source changed to local files (En.mp3, Hi.mp3, etc.) based on language selection.
-    - Corrected a minor typo in the CSV export headers.
+    - Fixed crash on startup by removing JavaScript references to non-existent "Back to Menu" buttons.
+    - Removed the standalone "Jigsaw Puzzle" button from the main menu HTML.
     -->
     <style>
         body {
@@ -35,8 +35,14 @@
         .btn {
             @apply px-8 py-3 bg-[#E7E0D8] text-[#4A4540] font-semibold rounded-lg shadow-md hover:bg-[#D7CEC5] transition-all duration-200 ease-in-out transform hover:-translate-y-0.5 active:translate-y-0 active:shadow-inner border border-[#D7CEC5] focus:outline-none focus:ring-2 focus:ring-[#6750A4] focus:ring-offset-2;
         }
+        .btn:disabled {
+            @apply bg-gray-300 text-gray-500 cursor-not-allowed transform-none shadow-inner;
+        }
         .btn-primary {
             @apply bg-[#6750A4] text-white hover:bg-[#5A4491] border-transparent;
+        }
+        .btn-primary:disabled {
+            @apply bg-gray-400 hover:bg-gray-400;
         }
 
         .menu-card {
@@ -91,7 +97,7 @@
     <div id="welcome-screen" class="screen active p-4">
         <div class="text-center bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
             <h1 class="text-4xl font-bold text-[#6750A4]">Performance Tester</h1>
-            <p class="mt-4 text-lg text-gray-600">Enter your name and select a language to begin.</p>
+            <p class="mt-4 text-lg text-gray-600">Enter your details to begin.</p>
             <input id="name-input" type="text" placeholder="Your Name" class="mt-8 w-full px-4 py-3 border border-[#D7CEC5] rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-[#6750A4]">
             <select id="lang-select" class="mt-4 w-full px-4 py-3 border border-[#D7CEC5] rounded-lg text-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#6750A4]">
                 <option value="" disabled selected>Select a Language</option>
@@ -100,6 +106,15 @@
                 <option value="Ml">Malayalam</option>
                 <option value="Es">Spanish</option>
             </select>
+            <select id="group-select" class="mt-4 w-full px-4 py-3 border border-[#D7CEC5] rounded-lg text-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#6750A4]">
+                <option value="" disabled selected>Select a Group</option>
+                <option value="A">Group A</option>
+                <option value="B">Group B</option>
+                <option value="C">Group C</option>
+                <option value="D">Group D</option>
+                <option value="E">Group E</option>
+                <option value="F">Group F</option>
+            </select>
             <button id="start-btn" class="btn btn-primary mt-6 w-full text-lg">Start</button>
         </div>
     </div>
@@ -107,25 +122,19 @@
     <!-- Screen: Main Menu -->
     <div id="menu-screen" class="screen p-4">
         <div class="text-center w-full max-w-3xl">
+            <div class="absolute top-4 right-4 bg-gray-100 px-3 py-1 rounded-full text-lg font-semibold">
+                Session: <span id="session-counter">0 / 3</span>
+            </div>
             <h2 class="text-3xl font-bold">Welcome, <span id="user-name-display"></span>!</h2>
-            <p class="mt-2 text-xl text-gray-600">Choose a test to start.</p>
-            <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <button id="start-aim-btn" class="menu-card">
-                    <span class="text-5xl">🎯</span>
-                    <h3 class="text-xl font-bold mt-2 text-[#4A4540]">Aim Trainer</h3>
-                    <p class="text-sm text-gray-500 mt-1">Test your speed and precision.</p>
-                </button>
-                <button id="start-memory-btn" class="menu-card">
-                    <span class="text-5xl">🧠</span>
-                    <h3 class="text-xl font-bold mt-2 text-[#4A4540]">Number Memory</h3>
-                    <p class="text-sm text-gray-500 mt-1">See how many digits you can recall.</p>
-                </button>
-                <button id="start-jigsaw-btn" class="menu-card">
-                     <span class="text-5xl">🧩</span>
-                    <h3 class="text-xl font-bold mt-2">Jigsaw Puzzle</h3>
-                    <p class="text-sm text-gray-500 mt-1">A fun distractor task.</p>
+            <p class="mt-2 text-xl text-gray-600">Ready for your next session?</p>
+            <div class="mt-10 flex justify-center">
+                <button id="start-tests-btn" class="menu-card max-w-sm mx-auto">
+                    <span class="text-5xl">🚀</span>
+                    <h3 class="text-xl font-bold mt-2 text-[#4A4540]">Start Test Session</h3>
+                    <p class="text-sm text-gray-500 mt-1">This will begin with a puzzle.</p>
                 </button>
             </div>
+            <p id="tests-complete-msg" class="text-green-600 font-semibold mt-4 text-lg hidden">All test sessions complete!</p>
             <div class="mt-12 flex flex-col sm:flex-row justify-center items-center gap-4">
                  <button id="view-results-btn" class="btn">View My Results</button>
                  <button id="download-all-btn" class="btn">Download All Data</button>
@@ -133,10 +142,16 @@
         </div>
     </div>
     
+    <!-- Screen: Pre-Test Countdown -->
+    <div id="pre-test-countdown-screen" class="screen p-4 flex-col bg-gray-800 text-white">
+        <h2 class="text-4xl font-bold mb-4">Get Ready...</h2>
+        <div id="pre-test-timer" class="text-9xl font-bold">15</div>
+    </div>
+
     <!-- Screen: Aim Trainer -->
     <div id="aim-trainer-screen" class="screen p-4 flex-col">
         <div class="w-full max-w-4xl flex justify-between items-center mb-2 px-2">
-            <button id="aim-back-btn" class="btn !px-4 !py-2 flex items-center"><span class="material-symbols-outlined mr-2">arrow_back</span>Menu</button>
+            <div class="w-36"></div>
             <h3 class="text-2xl font-bold">Aim Trainer</h3>
             <p class="text-lg font-mono">Target: <span id="target-count">0 / 0</span></p>
         </div>
@@ -163,7 +178,7 @@
     <!-- Screen: Number Memory -->
     <div id="number-memory-screen" class="screen p-4 flex-col justify-start">
          <div class="w-full max-w-3xl flex justify-start items-center p-2">
-            <button id="memory-back-btn" class="btn !px-4 !py-2 flex items-center"><span class="material-symbols-outlined mr-2">arrow_back</span>Menu</button>
+            <div class="w-36"></div>
         </div>
         <div id="memory-test-ui" class="text-center w-full max-w-3xl">
             <input type="tel" id="keyboard-activator" class="absolute -top-96 -left-96">
@@ -180,7 +195,7 @@
             </div>
              <div id="memory-start-overlay" class="mt-8">
                 <h4 class="text-2xl font-bold">Memorize the sequence of numbers.</h4>
-                <p class="mt-2">The length will increase each round.</p>
+                <p class="mt-2">Press Space to skip a digit, Enter to submit.</p>
                 <button id="start-memory-test-btn" class="mt-6 btn btn-primary">Start Test</button>
             </div>
         </div>
@@ -189,7 +204,7 @@
     <!-- Screen: Jigsaw Puzzle -->
     <div id="jigsaw-screen" class="screen flex-col h-screen">
         <div class="w-full flex justify-between items-center p-2 sm:p-4 z-10 bg-white/20 backdrop-blur-sm flex-shrink-0">
-            <button id="jigsaw-back-btn" class="btn !px-4 !py-2 flex items-center"><span class="material-symbols-outlined mr-2">arrow_back</span>Menu</button>
+            <button id="jigsaw-back-btn" class="btn !px-4 !py-2 flex items-center"><span class="material-symbols-outlined mr-2">arrow_forward</span>Continue to Tests</button>
             <h2 class="text-xl sm:text-2xl font-bold">Jigsaw Puzzle</h2>
             <div class="w-36"></div> <!-- Spacer -->
         </div>
@@ -224,14 +239,20 @@
         const state = {
             userName: '',
             lang: '',
+            group: '',
+            sessionCount: 0,
             currentTest: null,
             aimTestResults: [],
             memoryTestResults: [],
+            currentMusicCondition: '',
+            currentMusicLang: '',
+            inTestSession: false,
         };
 
         const screens = {
             welcome: document.getElementById('welcome-screen'),
             menu: document.getElementById('menu-screen'),
+            preTestCountdown: document.getElementById('pre-test-countdown-screen'),
             aim: document.getElementById('aim-trainer-screen'),
             memory: document.getElementById('number-memory-screen'),
             jigsaw: document.getElementById('jigsaw-screen'),
@@ -241,16 +262,18 @@
         const ui = {
             nameInput: document.getElementById('name-input'),
             langSelect: document.getElementById('lang-select'),
+            groupSelect: document.getElementById('group-select'),
             startBtn: document.getElementById('start-btn'),
             userNameDisplay: document.getElementById('user-name-display'),
-            startAimBtn: document.getElementById('start-aim-btn'),
-            startMemoryBtn: document.getElementById('start-memory-btn'),
-            startJigsawBtn: document.getElementById('start-jigsaw-btn'),
+            sessionCounter: document.getElementById('session-counter'),
+            startTestsBtn: document.getElementById('start-tests-btn'),
+            testsCompleteMsg: document.getElementById('tests-complete-msg'),
             viewResultsBtn: document.getElementById('view-results-btn'),
             backToMenuBtn: document.getElementById('back-to-menu-btn'),
             resultsContent: document.getElementById('results-content'),
             downloadCsvBtn: document.getElementById('download-csv-btn'),
             downloadAllBtn: document.getElementById('download-all-btn'),
+            preTestTimer: document.getElementById('pre-test-timer'),
         };
 
         const aimUI = {
@@ -262,7 +285,6 @@
             overlayInitialContent: document.getElementById('aim-overlay-initial-content'),
             countdownContainer: document.getElementById('aim-countdown-container'),
             countdown: document.getElementById('aim-countdown'),
-            backBtn: document.getElementById('aim-back-btn'),
         };
         
         const memoryUI = {
@@ -274,7 +296,6 @@
             startTestBtn: document.getElementById('start-memory-test-btn'),
             memoryDisplayContainer: document.getElementById('memory-display-container'),
             keyboardActivator: document.getElementById('keyboard-activator'),
-            backBtn: document.getElementById('memory-back-btn'),
         };
 
         const jigsawUI = {
@@ -286,6 +307,17 @@
 
         let db;
 
+        const JIGSAW_EMBEDS = [
+            "https://puzzleme.amuselabs.com/pmm/jigsaw?id=b9a74334&set=e5be2f29555f0b9157d1936275ff5b69cee8c5c5198c9d48b300dca4f0df5a7f&embed=1",
+            "https://puzzleme.amuselabs.com/pmm/jigsaw?id=e3ca82a8&set=e5be2f29555f0b9157d1936275ff5b69cee8c5c5198c9d48b300dca4f0df5a7f&embed=1",
+            "https://puzzleme.amuselabs.com/pmm/jigsaw?id=73f650df&set=e5be2f29555f0b9157d1936275ff5b69cee8c5c5198c9d48b300dca4f0df5a7f&embed=1"
+        ];
+
+        const MUSIC_CONDITIONS = {
+            A: ['S', 'N', 'P'], B: ['S', 'P', 'N'], C: ['N', 'S', 'P'],
+            D: ['N', 'P', 'S'], E: ['P', 'N', 'S'], F: ['P', 'S', 'N']
+        };
+
         function showScreen(screenId) {
             Object.values(screens).forEach(screen => screen.classList.remove('active'));
             screens[screenId].classList.add('active');
@@ -293,8 +325,9 @@
 
         const Music = {
             play: function(lang) {
-                if (!lang) {
-                    console.error("Language not set, cannot play music.");
+                if (!lang || lang === 'Silence') {
+                    musicPlayer.src = 'Silent.mp3';
+                    musicPlayer.play().catch(() => console.log("Silent.mp3 not found or autoplay prevented."));
                     return;
                 }
                 const fileName = `${lang}.mp3`;
@@ -302,7 +335,7 @@
                 const promise = musicPlayer.play();
                 if (promise !== undefined) {
                     promise.catch(error => {
-                        console.log("Music autoplay was prevented by the browser.");
+                        console.log(`Music autoplay for ${fileName} was prevented.`);
                     });
                 }
             },
@@ -333,7 +366,7 @@
                     request.onerror = e => reject('Save Error: ' + e.target.error);
                 });
             },
-            getResults: function(userName) {
+            getResults: function(userName, lang, group) {
                 return new Promise((resolve, reject) => {
                     const transaction = db.transaction(['results'], 'readonly');
                     const store = transaction.objectStore('results');
@@ -342,9 +375,11 @@
                     request.onsuccess = e => {
                         const cursor = e.target.result;
                         if (cursor) {
-                            if (cursor.value.userName === userName) allResults.push(cursor.value);
+                            if (cursor.value.userName === userName && cursor.value.language === lang && cursor.value.group === group) {
+                                allResults.push(cursor.value);
+                            }
                             cursor.continue();
-                        } else resolve(allResults.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
+                        } else resolve(allResults.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)));
                     };
                     request.onerror = e => reject('Fetch Error: ' + e.target.error);
                 });
@@ -362,11 +397,10 @@
 
         function setupEventListeners() {
             ui.startBtn.addEventListener('click', handleStart);
-            ui.nameInput.addEventListener('input', () => ui.nameInput.classList.remove('input-error'));
-            ui.langSelect.addEventListener('change', () => ui.langSelect.classList.remove('input-error'));
-            ui.startAimBtn.addEventListener('click', () => startAimTest());
-            ui.startMemoryBtn.addEventListener('click', () => startMemoryTest());
-            ui.startJigsawBtn.addEventListener('click', () => startJigsawTest());
+            ['nameInput', 'langSelect', 'groupSelect'].forEach(id => {
+                ui[id].addEventListener('input', () => ui[id].classList.remove('input-error'));
+            });
+            ui.startTestsBtn.addEventListener('click', () => startTestSession());
             aimUI.startTestBtn.addEventListener('click', runAimTest);
             memoryUI.startTestBtn.addEventListener('click', runMemoryTest);
             aimUI.target.addEventListener('click', handleTargetHit);
@@ -378,46 +412,55 @@
             memoryUI.memoryDisplayContainer.addEventListener('click', handleMemoryContainerClick);
             
             jigsawUI.backBtn.addEventListener('click', () => {
-                jigsawUI.embedContainer.innerHTML = ''; // Clear the iframe
-                showScreen('menu');
-            });
-            aimUI.backBtn.addEventListener('click', () => {
-                Music.stop();
-                showScreen('menu');
-            });
-             memoryUI.backBtn.addEventListener('click', () => {
-                Music.stop();
-                showScreen('menu');
+                jigsawUI.embedContainer.innerHTML = '';
+                if (state.inTestSession) {
+                    startPreTestCountdown();
+                } else {
+                    showScreen('menu');
+                }
             });
         }
 
-        function handleStart() {
+        async function handleStart() {
             const name = ui.nameInput.value.trim();
             const lang = ui.langSelect.value;
+            const group = ui.groupSelect.value;
             let isValid = true;
 
-            if (!name) {
-                ui.nameInput.classList.add('input-error');
-                isValid = false;
-            } else {
-                ui.nameInput.classList.remove('input-error');
-            }
-
-            if (!lang) {
-                ui.langSelect.classList.add('input-error');
-                isValid = false;
-            } else {
-                ui.langSelect.classList.remove('input-error');
-            }
+            if (!name) { ui.nameInput.classList.add('input-error'); isValid = false; }
+            if (!lang) { ui.langSelect.classList.add('input-error'); isValid = false; }
+            if (!group) { ui.groupSelect.classList.add('input-error'); isValid = false; }
 
             if (isValid) {
                 state.userName = name;
                 state.lang = lang;
+                state.group = group;
                 ui.userNameDisplay.textContent = state.userName;
+
+                const existingResults = await Database.getResults(state.userName, state.lang, state.group);
+                const aimSessions = existingResults.filter(r => r.testType === 'aim').length;
+                state.sessionCount = aimSessions;
+                updateSessionCounter();
+                
                 showScreen('menu');
             }
         }
         
+        function updateSessionCounter() {
+             ui.sessionCounter.textContent = `${state.sessionCount} / 3`;
+             if (state.sessionCount >= 3) {
+                 ui.startTestsBtn.disabled = true;
+                 ui.testsCompleteMsg.classList.remove('hidden');
+                 if (ui.startJigsawBtn) ui.startJigsawBtn.style.display = 'none';
+                 ui.startTestsBtn.style.display = 'none';
+             } else {
+                 ui.startTestsBtn.disabled = false;
+                 ui.testsCompleteMsg.classList.add('hidden');
+                 if (ui.startJigsawBtn) ui.startJigsawBtn.style.display = 'flex';
+                 ui.startTestsBtn.style.display = 'flex';
+             }
+        }
+
         function handleMemoryContainerClick(e) {
             if (e.target.tagName === 'INPUT') return;
             if (!memoryUI.otpInputArea.classList.contains('hidden')) {
@@ -431,21 +474,63 @@
             }
         }
 
+        function determineMusic() {
+            const conditionOrder = MUSIC_CONDITIONS[state.group];
+            if (!conditionOrder) return { condition: 'S', lang: 'Silence' };
+            
+            const condition = conditionOrder[state.sessionCount];
+            let musicLang = 'Silence';
+
+            if (condition === 'P') {
+                musicLang = state.lang;
+            } else if (condition === 'N') {
+                if (state.lang === 'Hi') musicLang = 'Ml';
+                else if (state.lang === 'En') musicLang = 'Es';
+                else if (state.lang === 'Ml') musicLang = 'Hi';
+                else if (state.lang === 'Es') musicLang = 'En';
+            }
+            state.currentMusicCondition = condition;
+            state.currentMusicLang = musicLang;
+        }
+        
+        function startTestSession() {
+            state.inTestSession = true;
+            startJigsawTest(false);
+        }
+
+        function startPreTestCountdown() {
+            determineMusic();
+            showScreen('preTestCountdown');
+            let timer = 15;
+            ui.preTestTimer.textContent = timer;
+            Music.play(state.currentMusicLang);
+
+            const interval = setInterval(() => {
+                timer--;
+                ui.preTestTimer.textContent = timer;
+                if (timer <= 0) {
+                    clearInterval(interval);
+                    startAimTest();
+                }
+            }, 1000);
+        }
+
         // --- Aim Trainer Functions ---
         let targetClickTime = 0;
         function startAimTest() {
             state.currentTest = 'aim';
             showScreen('aim');
             aimUI.startOverlay.style.display = 'flex';
-            aimUI.overlayInitialContent.classList.remove('hidden');
-            aimUI.countdownContainer.classList.add('hidden');
+            aimUI.overlayInitialContent.style.display = 'block';
+            aimUI.countdownContainer.style.display = 'none';
             aimUI.target.style.display = 'none';
             aimUI.countDisplay.textContent = `0 / ${AppConfig.AIM_TARGET_COUNT}`;
         }
         
-        function runAimTest() {
-            aimUI.overlayInitialContent.classList.add('hidden');
-            aimUI.countdownContainer.classList.remove('hidden');
+        function runAimTest(){
+            aimUI.startOverlay.style.display = 'flex';
+            aimUI.overlayInitialContent.style.display = 'none';
+            aimUI.countdownContainer.style.display = 'block';
             let count = 3;
             aimUI.countdown.textContent = count;
             const interval = setInterval(() => {
@@ -456,7 +541,6 @@
                     aimUI.startOverlay.style.display = 'none';
                     state.aimTestResults = [];
                     aimUI.countDisplay.textContent = `1 / ${AppConfig.AIM_TARGET_COUNT}`;
-                    Music.play(state.lang);
                     spawnTarget();
                 }
             }, 1000);
@@ -509,12 +593,11 @@
             memoryUI.numberDisplay.classList.remove('hidden');
             memoryUI.timerDots.classList.add('invisible');
         }
-
+        
         function runMemoryTest() {
-            memoryUI.startOverlay.style.display = 'none';
+             memoryUI.startOverlay.style.display = 'none';
             state.memoryTestResults = [];
             currentMemoryRound = 0;
-            Music.play(state.lang);
             runMemoryRound();
         }
 
@@ -584,11 +667,19 @@
         }
 
         function handleOtpKeydown(e) {
-            if (e.key === 'Backspace' && e.target.value === '') {
-                let prev = e.target.previousElementSibling;
+            const input = e.target;
+            if (e.key === 'Backspace' && input.value === '') {
+                let prev = input.previousElementSibling;
                 if (prev && prev.tagName === 'SPAN') prev = prev.previousElementSibling;
                 if (prev) prev.focus();
-            } else if (e.key === 'Enter') checkMemoryAnswer();
+            } else if (e.key === ' ') {
+                e.preventDefault();
+                let next = input.nextElementSibling;
+                if (next && next.tagName === 'SPAN') next = next.nextElementSibling;
+                if (next) next.focus();
+            } else if (e.key === 'Enter') {
+                checkMemoryAnswer();
+            }
         }
 
         function checkMemoryAnswer() {
@@ -613,20 +704,19 @@
         }
 
         // --- Jigsaw Puzzle Functions ---
-        function startJigsawTest() {
+        function startJigsawTest(isStandalone = false) {
             state.currentTest = 'jigsaw';
-            const embedUrls = [
-                "https://puzzleme.amuselabs.com/pmm/jigsaw?id=b9a74334&set=e5be2f29555f0b9157d1936275ff5b69cee8c5c5198c9d48b300dca4f0df5a7f&embed=1",
-                "https://puzzleme.amuselabs.com/pmm/jigsaw?id=e3ca82a8&set=e5be2f29555f0b9157d1936275ff5b69cee8c5c5198c9d48b300dca4f0df5a7f&embed=1",
-                "https://puzzleme.amuselabs.com/pmm/jigsaw?id=73f650df&set=e5be2f29555f0b9157d1936275ff5b69cee8c5c5198c9d48b300dca4f0df5a7f&embed=1"
-            ];
-            
-            const randomUrl = embedUrls[Math.floor(Math.random() * embedUrls.length)];
-            
-            jigsawUI.embedContainer.innerHTML = ''; // Clear previous iframe
+            state.inTestSession = !isStandalone;
+            jigsawUI.backBtn.textContent = isStandalone ? 'Back to Menu' : 'Continue to Tests';
+
+            const embedUrl = isStandalone 
+                ? JIGSAW_EMBEDS[Math.floor(Math.random() * JIGSAW_EMBEDS.length)]
+                : JIGSAW_EMBEDS[state.sessionCount];
+
+            jigsawUI.embedContainer.innerHTML = '';
             
             const iframe = document.createElement('iframe');
-            iframe.src = randomUrl;
+            iframe.src = `${embedUrl}&_=${Date.now()}`; // Cache-busting
             iframe.setAttribute('allow', 'web-share; fullscreen');
             iframe.setAttribute('aria-label', 'Puzzle Me Game');
             
@@ -636,60 +726,87 @@
 
         // --- General Test & Results Functions ---
         async function endTest() {
-            Music.stop();
-            const resultData = {
-                userName: state.userName,
-                language: state.lang,
-                testType: state.currentTest,
-                timestamp: new Date().toISOString(),
-            };
-            let html = '';
+            const currentTestType = state.currentTest;
 
-            if (state.currentTest === 'aim') {
-                const avgSpeed = state.aimTestResults.reduce((a, r) => a + r.speed, 0) / state.aimTestResults.length;
-                const totalScore = state.aimTestResults.reduce((a, r) => a + r.accuracy, 0);
-                const maxScore = AppConfig.AIM_TARGET_COUNT * 3;
-                const scorePct = maxScore > 0 ? (totalScore / maxScore) * 100 : 0;
-                resultData.results = state.aimTestResults;
-                resultData.summary = { avgSpeed: avgSpeed.toFixed(2), totalScore, maxScore, scorePercentage: scorePct.toFixed(2) };
-                html = `<h3 class="text-2xl font-semibold text-center mb-4">Aim Trainer Complete!</h3>
-                        <p class="text-xl text-center">Average Time: <span class="font-bold">${avgSpeed.toFixed(2)} ms</span></p>
-                        <p class="text-xl text-center">Score: <span class="font-bold">${totalScore}/${maxScore} (${scorePct.toFixed(2)}%)</span></p>`;
+            if (currentTestType === 'aim') {
+                const resultData = {
+                    userName: state.userName, language: state.lang, group: state.group,
+                    testType: currentTestType, timestamp: new Date().toISOString(),
+                    results: state.aimTestResults,
+                    musicCondition: state.currentMusicCondition,
+                    musicLanguage: state.currentMusicLang,
+                };
                 await Database.saveResult(resultData);
-            } else if (state.currentTest === 'memory') {
-                 const totalCorrectDigits = state.memoryTestResults.reduce((acc, r) => acc + r.correctDigits, 0);
-                 const totalDigitsShown = state.memoryTestResults.reduce((acc, r) => acc + r.digits, 0);
-                 const overallAccuracy = totalDigitsShown > 0 ? (totalCorrectDigits / totalDigitsShown * 100) : 0;
-                 resultData.results = state.memoryTestResults;
-                 resultData.summary = { totalCorrectDigits, totalDigitsShown, overallAccuracy: overallAccuracy.toFixed(2) };
-                 html = `<h3 class="text-2xl font-semibold text-center mb-4">Number Memory Complete!</h3>
-                         <p class="text-xl text-center">Overall Accuracy: <span class="font-bold">${overallAccuracy.toFixed(2)}%</span></p>
-                         <p class="text-lg text-center text-gray-600 mt-2">You remembered <span class="font-semibold">${totalCorrectDigits}</span> out of <span class="font-semibold">${totalDigitsShown}</span> digits correctly.</p>`;
-                await Database.saveResult(resultData);
+                startMemoryTest();
+                return;
             }
-            
-            ui.resultsContent.innerHTML = html;
-            showScreen('results');
+
+            if (currentTestType === 'memory') {
+                Music.stop();
+                const resultData = {
+                    userName: state.userName, language: state.lang, group: state.group,
+                    testType: currentTestType, timestamp: new Date().toISOString(),
+                    results: state.memoryTestResults,
+                    musicCondition: state.currentMusicCondition,
+                    musicLanguage: state.currentMusicLang,
+                };
+                await Database.saveResult(resultData);
+                
+                state.sessionCount++;
+                updateSessionCounter();
+                
+                showScreen('menu');
+                if (state.sessionCount >= 3) {
+                     alert("All test sessions are complete!");
+                }
+                state.inTestSession = false;
+            }
         }
 
         async function showAllResults() {
-            const results = await Database.getResults(state.userName);
+            const results = await Database.getResults(state.userName, state.lang, state.group);
             let html = '<h3 class="text-2xl font-semibold text-center mb-4">Your History</h3>';
-            const savedTests = results.filter(res => res.testType !== 'jigsaw');
+            
+            const sessions = {};
+            results.forEach(res => {
+                if (!sessions[res.timestamp]) sessions[res.timestamp] = {};
+                sessions[res.timestamp][res.testType] = res;
+            });
+            
+            const sortedTimestamps = Object.keys(sessions).sort((a,b) => new Date(b) - new Date(a));
 
-            if (savedTests.length === 0) {
+            if (sortedTimestamps.length === 0) {
                 html += '<p class="text-center text-gray-500">No results found. Complete a test to see your history!</p>';
             } else {
                 html += '<div class="space-y-6">';
-                savedTests.forEach(res => {
-                    const date = new Date(res.timestamp).toLocaleString();
-                    html += `<div class="p-4 bg-gray-50 rounded-lg border">`;
-                    if (res.testType === 'aim') {
-                        html += `<p class="font-bold text-lg">Aim Trainer</p><p class="text-sm text-gray-500">${date}</p>
-                                 <p class="mt-2">Avg. Speed: <span class="font-semibold">${res.summary.avgSpeed} ms</span> | Score: <span class="font-semibold">${res.summary.totalScore}/${res.summary.maxScore}</span></p>`;
-                    } else if (res.testType === 'memory') {
-                        html += `<p class="font-bold text-lg">Number Memory</p><p class="text-sm text-gray-500">${date}</p>
-                                 <p class="mt-2">Accuracy: <span class="font-semibold">${res.summary.overallAccuracy}%</span> | Correct: <span class="font-semibold">${res.summary.totalCorrectDigits} / ${res.summary.totalDigitsShown}</span></p>`;
+                sortedTimestamps.forEach((ts, index) => {
+                    const sessionData = sessions[ts];
+                    const sessionNumber = sortedTimestamps.length - index;
+                    const date = new Date(ts).toLocaleString();
+                     html += `<div class="p-4 bg-gray-100 rounded-xl border-2">
+                                <p class="font-bold text-xl text-center">Session ${sessionNumber}</p>
+                                <p class="text-sm text-center text-gray-500 mb-2">${date}</p>`;
+                    
+                    if (sessionData.aim) {
+                        const res = sessionData.aim;
+                        const totalScore = res.results.reduce((a, r) => a + r.accuracy, 0);
+                        const avgSpeed = (res.results.reduce((a, r) => a + r.speed, 0) / res.results.length).toFixed(2);
+                        html += `<div class="p-3 bg-white rounded-lg border mt-2">
+                                    <p class="font-semibold text-lg">Aim Trainer</p>
+                                    <p class="mt-1">Avg. Speed: <span class="font-semibold">${avgSpeed} ms</span> | Score: <span class="font-semibold">${totalScore}/${AppConfig.AIM_TARGET_COUNT * 3}</span></p>
+                                    <p class="text-sm text-gray-600">Music: ${res.musicLanguage} (${res.musicCondition})</p>
+                                </div>`;
+                    }
+                    if (sessionData.memory) {
+                        const res = sessionData.memory;
+                        const totalCorrectDigits = res.results.reduce((acc, r) => acc + r.correctDigits, 0);
+                        const totalDigitsShown = res.results.reduce((acc, r) => acc + r.digits, 0);
+                        const overallAccuracy = (totalDigitsShown > 0 ? (totalCorrectDigits / totalDigitsShown * 100) : 0).toFixed(2);
+                        html += `<div class="p-3 bg-white rounded-lg border mt-2">
+                                    <p class="font-semibold text-lg">Number Memory</p>
+                                    <p class="mt-1">Accuracy: <span class="font-semibold">${overallAccuracy}%</span> | Correct: <span class="font-semibold">${totalCorrectDigits} / ${totalDigitsShown}</span></p>
+                                     <p class="text-sm text-gray-600">Music: ${res.musicLanguage} (${res.musicCondition})</p>
+                                 </div>`;
                     }
                     html += `</div>`;
                 });
@@ -701,10 +818,10 @@
 
         function downloadCsv(results, baseFileName) {
             const headers = [
-                "name", "language", "test", "aim trial round", "time to hit aim", "time to hit aim cumulative", 
-                "aim score", "aim score cumulative", "total possible aim score", "number trial round", 
-                "time to enter number", "time to enter number cumulative", "digits correct", 
-                "digits correct cumulative", "digits this round", "total possible correct digits"
+                "name", "language", "group", "test", "music_condition", "music_language", "aim_trial_round", "time_to_hit_aim", "time_to_hit_aim_cumulative", 
+                "aim_score", "aim_score_cumulative", "total_possible_aim_score", "number_trial_round", 
+                "time_to_enter_number", "time_to_enter_number_cumulative", "digits_correct", 
+                "digits_correct_cumulative", "digits_this_round", "total_possible_correct_digits"
             ];
             let csvRows = [headers.join(',')];
 
@@ -719,9 +836,9 @@
                         const possibleScoreCumulative = (index + 1) * 3;
                         
                         const row = [
-                            `"${session.userName}"`, session.language, session.testType, index + 1, trial.speed, timeCumulative,
-                            trial.accuracy, scoreCumulative, possibleScoreCumulative, 'N/A', 'N/A', 'N/A',
-                            'N/A', 'N/A', 'N/A', 'N/A'
+                            `"${session.userName}"`, session.language, session.group, session.testType, session.musicCondition, session.musicLanguage,
+                            index + 1, trial.speed, timeCumulative, trial.accuracy, scoreCumulative, possibleScoreCumulative, 
+                            'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A'
                         ];
                         csvRows.push(row.join(','));
                     });
@@ -736,14 +853,14 @@
                         totalDigitsCumulative += trial.digits;
 
                         const row = [
-                           `"${session.userName}"`, session.language, session.testType, 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A',
+                           `"${session.userName}"`, session.language, session.group, session.testType, session.musicCondition, session.musicLanguage,
+                           'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A',
                            index + 1, trial.speed, timeCumulative, trial.correctDigits,
                            correctCumulative, trial.digits, totalDigitsCumulative
                         ];
                         csvRows.push(row.join(','));
                     });
                 }
-                // Jigsaw data is explicitly ignored
             });
 
             const csvContent = csvRows.join('\r\n');
@@ -757,7 +874,7 @@
         }
 
         async function downloadMyCsv() {
-            const results = await Database.getResults(state.userName);
+            const results = await Database.getResults(state.userName, state.lang, state.group);
             downloadCsv(results, `${state.userName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_performance_data`);
         }
 
@@ -774,5 +891,4 @@
     </script>
 </body>
 </html>
-
 
