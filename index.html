@@ -11,7 +11,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <!-- 
     Application Update:
-    - Added CSS properties to `html` and `body` to disable scrolling and overscroll bounce effect on iPads and other touch devices.
+    - Adjusted main menu layout to stack the "Start Test Session" button content vertically.
+    - Updated main menu text to dynamically show "first," "second," or "final" session.
     -->
     <style>
         html {
@@ -132,7 +133,7 @@
                 Session: <span id="session-counter">0 / 3</span>
             </div>
             <h2 class="text-3xl font-bold">Welcome, <span id="user-name-display"></span>!</h2>
-            <p class="mt-2 text-xl text-gray-600">Ready for your next session?</p>
+            <p id="session-prompt" class="mt-2 text-xl text-gray-600"></p>
             <div class="mt-10 flex justify-center">
                 <button id="start-tests-btn" class="menu-card max-w-sm mx-auto">
                     <span class="text-5xl">🚀</span>
@@ -235,7 +236,7 @@
         'use strict';
         const AppConfig = {
             AIM_TARGET_COUNT: 30,
-            MEMORY_ROUNDS: 10,
+            MEMORY_ROUNDS: 5,
             MEMORY_DIGIT_INCREMENT: 3,
             MEMORY_STARTING_DIGITS: 3,
             MEMORY_BASE_DISPLAY_TIME: 2000,
@@ -272,6 +273,7 @@
             startBtn: document.getElementById('start-btn'),
             userNameDisplay: document.getElementById('user-name-display'),
             sessionCounter: document.getElementById('session-counter'),
+            sessionPrompt: document.getElementById('session-prompt'),
             startTestsBtn: document.getElementById('start-tests-btn'),
             testsCompleteMsg: document.getElementById('tests-complete-msg'),
             viewResultsBtn: document.getElementById('view-results-btn'),
@@ -454,16 +456,18 @@
         
         function updateSessionCounter() {
              ui.sessionCounter.textContent = `${state.sessionCount} / 3`;
-             if (state.sessionCount >= 3) {
-                 ui.startTestsBtn.disabled = true;
-                 ui.testsCompleteMsg.classList.remove('hidden');
-                 if (ui.startJigsawBtn) ui.startJigsawBtn.style.display = 'none';
-                 ui.startTestsBtn.style.display = 'none';
-             } else {
+             const prompts = ["Ready for your first session?", "Ready for your second session?", "Ready for your final session?"];
+             
+             if (state.sessionCount < 3) {
+                 ui.sessionPrompt.textContent = prompts[state.sessionCount];
                  ui.startTestsBtn.disabled = false;
                  ui.testsCompleteMsg.classList.add('hidden');
-                 if (ui.startJigsawBtn) ui.startJigsawBtn.style.display = 'flex';
                  ui.startTestsBtn.style.display = 'flex';
+             } else {
+                 ui.sessionPrompt.textContent = "All sessions are complete.";
+                 ui.startTestsBtn.disabled = true;
+                 ui.testsCompleteMsg.classList.remove('hidden');
+                 ui.startTestsBtn.style.display = 'none';
              }
         }
 
