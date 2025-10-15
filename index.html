@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Human Performance Tester</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <!-- 
+    Application Update:
+    - Music source changed to local files (En.mp3, Hi.mp3, etc.) based on language selection.
+    - Corrected a minor typo in the CSV export headers.
+    -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBFA;
+            color: #4A4540;
+            overflow: hidden;
+        }
+        .screen {
+            display: none;
+            width: 100%;
+            min-height: 100vh;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .active {
+            display: flex;
+        }
+        .btn {
+            @apply px-8 py-3 bg-[#E7E0D8] text-[#4A4540] font-semibold rounded-lg shadow-md hover:bg-[#D7CEC5] transition-all duration-200 ease-in-out transform hover:-translate-y-0.5 active:translate-y-0 active:shadow-inner border border-[#D7CEC5] focus:outline-none focus:ring-2 focus:ring-[#6750A4] focus:ring-offset-2;
+        }
+        .btn-primary {
+            @apply bg-[#6750A4] text-white hover:bg-[#5A4491] border-transparent;
+        }
+
+        .menu-card {
+            @apply flex flex-col items-center justify-center p-6 bg-white rounded-xl shadow-lg border-2 border-transparent hover:border-[#6750A4] hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 cursor-pointer text-center;
+        }
+       
+        #aim-area {
+            width: 90vw;
+            height: 70vh;
+            max-width: 1000px;
+            max-height: 600px;
+            background-color: #F1ECE6;
+            border: 2px solid #D7CEC5;
+            position: relative;
+            cursor: crosshair;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+        #aim-target {
+            width: 5cm;
+            height: 5cm;
+            position: absolute;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        #aim-target > div {
+            border-radius: 50%;
+            position: absolute;
+        }
+        #target-outer { width: 5cm; height: 5cm; background-color: #B5322F; border: 2px solid #FDFBFA; }
+        #target-middle { width: 3cm; height: 3cm; background-color: white; }
+        #target-inner { width: 1cm; height: 1cm; background-color: #B5322F; }
+
+        #jigsaw-embed-container {
+            background-color: #E7E0D8;
+        }
+        #jigsaw-embed-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .input-error {
+            @apply border-red-500 ring-1 ring-red-400;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Screen: Welcome -->
+    <div id="welcome-screen" class="screen active p-4">
+        <div class="text-center bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+            <h1 class="text-4xl font-bold text-[#6750A4]">Performance Tester</h1>
+            <p class="mt-4 text-lg text-gray-600">Enter your name and select a language to begin.</p>
+            <input id="name-input" type="text" placeholder="Your Name" class="mt-8 w-full px-4 py-3 border border-[#D7CEC5] rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-[#6750A4]">
+            <select id="lang-select" class="mt-4 w-full px-4 py-3 border border-[#D7CEC5] rounded-lg text-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#6750A4]">
+                <option value="" disabled selected>Select a Language</option>
+                <option value="En">English</option>
+                <option value="Hi">Hindi</option>
+                <option value="Ml">Malayalam</option>
+                <option value="Es">Spanish</option>
+            </select>
+            <button id="start-btn" class="btn btn-primary mt-6 w-full text-lg">Start</button>
+        </div>
+    </div>
+
+    <!-- Screen: Main Menu -->
+    <div id="menu-screen" class="screen p-4">
+        <div class="text-center w-full max-w-3xl">
+            <h2 class="text-3xl font-bold">Welcome, <span id="user-name-display"></span>!</h2>
+            <p class="mt-2 text-xl text-gray-600">Choose a test to start.</p>
+            <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <button id="start-aim-btn" class="menu-card">
+                    <span class="text-5xl">🎯</span>
+                    <h3 class="text-xl font-bold mt-2 text-[#4A4540]">Aim Trainer</h3>
+                    <p class="text-sm text-gray-500 mt-1">Test your speed and precision.</p>
+                </button>
+                <button id="start-memory-btn" class="menu-card">
+                    <span class="text-5xl">🧠</span>
+                    <h3 class="text-xl font-bold mt-2 text-[#4A4540]">Number Memory</h3>
+                    <p class="text-sm text-gray-500 mt-1">See how many digits you can recall.</p>
+                </button>
+                <button id="start-jigsaw-btn" class="menu-card">
+                     <span class="text-5xl">🧩</span>
+                    <h3 class="text-xl font-bold mt-2">Jigsaw Puzzle</h3>
+                    <p class="text-sm text-gray-500 mt-1">A fun distractor task.</p>
+                </button>
+            </div>
+            <div class="mt-12 flex flex-col sm:flex-row justify-center items-center gap-4">
+                 <button id="view-results-btn" class="btn">View My Results</button>
+                 <button id="download-all-btn" class="btn">Download All Data</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Screen: Aim Trainer -->
+    <div id="aim-trainer-screen" class="screen p-4 flex-col">
+        <div class="w-full max-w-4xl flex justify-between items-center mb-2 px-2">
+            <button id="aim-back-btn" class="btn !px-4 !py-2 flex items-center"><span class="material-symbols-outlined mr-2">arrow_back</span>Menu</button>
+            <h3 class="text-2xl font-bold">Aim Trainer</h3>
+            <p class="text-lg font-mono">Target: <span id="target-count">0 / 0</span></p>
+        </div>
+        <div id="aim-test-ui" class="text-center w-full max-w-4xl flex-grow flex items-center justify-center">
+            <div id="aim-area">
+                <div id="aim-target">
+                    <div id="target-outer" data-score="1"></div>
+                    <div id="target-middle" data-score="2"></div>
+                    <div id="target-inner" data-score="3"></div>
+                </div>
+                 <div id="aim-start-overlay" class="absolute inset-0 bg-gray-900 bg-opacity-50 flex flex-col justify-center items-center text-white p-4">
+                    <div id="aim-overlay-initial-content" class="text-center">
+                        <h4 class="text-3xl font-bold">Click 30 targets as fast as you can.</h4>
+                        <button id="start-aim-test-btn" class="mt-6 btn btn-primary">Start Test</button>
+                    </div>
+                    <div id="aim-countdown-container" class="hidden">
+                        <h1 id="aim-countdown" class="text-9xl font-bold text-white"></h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen: Number Memory -->
+    <div id="number-memory-screen" class="screen p-4 flex-col justify-start">
+         <div class="w-full max-w-3xl flex justify-start items-center p-2">
+            <button id="memory-back-btn" class="btn !px-4 !py-2 flex items-center"><span class="material-symbols-outlined mr-2">arrow_back</span>Menu</button>
+        </div>
+        <div id="memory-test-ui" class="text-center w-full max-w-3xl">
+            <input type="tel" id="keyboard-activator" class="absolute -top-96 -left-96">
+            <h3 class="text-2xl font-bold">Number Memory Test</h3>
+            <p class="text-lg font-mono mt-2">Round: <span id="round-count">1 / 10</span></p>
+            <div id="memory-display-container" class="relative mt-8 bg-white rounded-lg min-h-[80px] w-full p-6 cursor-text">
+                <div id="number-display-area" class="absolute inset-0 flex items-center justify-center text-4xl md:text-5xl font-mono tracking-widest whitespace-nowrap"></div>
+                <div id="otp-input-area" class="absolute inset-0 hidden flex flex-nowrap items-center justify-center gap-2 p-2"></div>
+            </div>
+            <div id="timer-dots" class="flex justify-center gap-4 mt-4 h-4 invisible">
+                <div class="timer-dot w-3 h-3 bg-gray-400 rounded-full transition-opacity duration-300"></div>
+                <div class="timer-dot w-3 h-3 bg-gray-400 rounded-full transition-opacity duration-300"></div>
+                <div class="timer-dot w-3 h-3 bg-gray-400 rounded-full transition-opacity duration-300"></div>
+            </div>
+             <div id="memory-start-overlay" class="mt-8">
+                <h4 class="text-2xl font-bold">Memorize the sequence of numbers.</h4>
+                <p class="mt-2">The length will increase each round.</p>
+                <button id="start-memory-test-btn" class="mt-6 btn btn-primary">Start Test</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen: Jigsaw Puzzle -->
+    <div id="jigsaw-screen" class="screen flex-col h-screen">
+        <div class="w-full flex justify-between items-center p-2 sm:p-4 z-10 bg-white/20 backdrop-blur-sm flex-shrink-0">
+            <button id="jigsaw-back-btn" class="btn !px-4 !py-2 flex items-center"><span class="material-symbols-outlined mr-2">arrow_back</span>Menu</button>
+            <h2 class="text-xl sm:text-2xl font-bold">Jigsaw Puzzle</h2>
+            <div class="w-36"></div> <!-- Spacer -->
+        </div>
+        <div id="jigsaw-embed-container" class="flex-grow w-full"></div>
+    </div>
+
+    <!-- Screen: Results -->
+    <div id="results-screen" class="screen p-4 md:p-8">
+        <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg w-full max-w-4xl">
+            <h2 class="text-3xl font-bold text-center">Results</h2>
+            <div id="results-content" class="mt-6 space-y-4 max-h-[70vh] overflow-y-auto"></div>
+            <div class="text-center mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
+                <button id="back-to-menu-btn" class="btn w-full sm:w-auto">Back to Menu</button>
+                <button id="download-csv-btn" class="btn btn-primary w-full sm:w-auto">Download My Data (CSV)</button>
+            </div>
+        </div>
+    </div>
+    
+    <audio id="background-music" loop></audio>
+
+    <script>
+        'use strict';
+        const AppConfig = {
+            AIM_TARGET_COUNT: 30,
+            MEMORY_ROUNDS: 10,
+            MEMORY_DIGIT_INCREMENT: 3,
+            MEMORY_STARTING_DIGITS: 3,
+            MEMORY_BASE_DISPLAY_TIME: 2000,
+            MEMORY_TIME_PER_DIGIT: 1000,
+        };
+
+        const state = {
+            userName: '',
+            lang: '',
+            currentTest: null,
+            aimTestResults: [],
+            memoryTestResults: [],
+        };
+
+        const screens = {
+            welcome: document.getElementById('welcome-screen'),
+            menu: document.getElementById('menu-screen'),
+            aim: document.getElementById('aim-trainer-screen'),
+            memory: document.getElementById('number-memory-screen'),
+            jigsaw: document.getElementById('jigsaw-screen'),
+            results: document.getElementById('results-screen'),
+        };
+
+        const ui = {
+            nameInput: document.getElementById('name-input'),
+            langSelect: document.getElementById('lang-select'),
+            startBtn: document.getElementById('start-btn'),
+            userNameDisplay: document.getElementById('user-name-display'),
+            startAimBtn: document.getElementById('start-aim-btn'),
+            startMemoryBtn: document.getElementById('start-memory-btn'),
+            startJigsawBtn: document.getElementById('start-jigsaw-btn'),
+            viewResultsBtn: document.getElementById('view-results-btn'),
+            backToMenuBtn: document.getElementById('back-to-menu-btn'),
+            resultsContent: document.getElementById('results-content'),
+            downloadCsvBtn: document.getElementById('download-csv-btn'),
+            downloadAllBtn: document.getElementById('download-all-btn'),
+        };
+
+        const aimUI = {
+            area: document.getElementById('aim-area'),
+            target: document.getElementById('aim-target'),
+            countDisplay: document.getElementById('target-count'),
+            startOverlay: document.getElementById('aim-start-overlay'),
+            startTestBtn: document.getElementById('start-aim-test-btn'),
+            overlayInitialContent: document.getElementById('aim-overlay-initial-content'),
+            countdownContainer: document.getElementById('aim-countdown-container'),
+            countdown: document.getElementById('aim-countdown'),
+            backBtn: document.getElementById('aim-back-btn'),
+        };
+        
+        const memoryUI = {
+            roundDisplay: document.getElementById('round-count'),
+            numberDisplay: document.getElementById('number-display-area'),
+            timerDots: document.getElementById('timer-dots'),
+            otpInputArea: document.getElementById('otp-input-area'),
+            startOverlay: document.getElementById('memory-start-overlay'),
+            startTestBtn: document.getElementById('start-memory-test-btn'),
+            memoryDisplayContainer: document.getElementById('memory-display-container'),
+            keyboardActivator: document.getElementById('keyboard-activator'),
+            backBtn: document.getElementById('memory-back-btn'),
+        };
+
+        const jigsawUI = {
+            backBtn: document.getElementById('jigsaw-back-btn'),
+            embedContainer: document.getElementById('jigsaw-embed-container'),
+        };
+
+        const musicPlayer = document.getElementById('background-music');
+
+        let db;
+
+        function showScreen(screenId) {
+            Object.values(screens).forEach(screen => screen.classList.remove('active'));
+            screens[screenId].classList.add('active');
+        }
+
+        const Music = {
+            play: function(lang) {
+                if (!lang) {
+                    console.error("Language not set, cannot play music.");
+                    return;
+                }
+                const fileName = `${lang}.mp3`;
+                musicPlayer.src = fileName;
+                const promise = musicPlayer.play();
+                if (promise !== undefined) {
+                    promise.catch(error => {
+                        console.log("Music autoplay was prevented by the browser.");
+                    });
+                }
+            },
+            stop: function() {
+                musicPlayer.pause();
+                musicPlayer.currentTime = 0;
+            }
+        };
+
+        const Database = {
+            init: function() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open('HumanPerformanceDB', 1);
+                    request.onupgradeneeded = e => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains('results')) db.createObjectStore('results', { keyPath: 'id', autoIncrement: true });
+                    };
+                    request.onsuccess = e => { db = e.target.result; resolve(); };
+                    request.onerror = e => reject('DB Error: ' + e.target.error);
+                });
+            },
+            saveResult: function(resultData) {
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction(['results'], 'readwrite');
+                    const store = transaction.objectStore('results');
+                    const request = store.add(resultData);
+                    request.onsuccess = () => resolve();
+                    request.onerror = e => reject('Save Error: ' + e.target.error);
+                });
+            },
+            getResults: function(userName) {
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction(['results'], 'readonly');
+                    const store = transaction.objectStore('results');
+                    const allResults = [];
+                    const request = store.openCursor();
+                    request.onsuccess = e => {
+                        const cursor = e.target.result;
+                        if (cursor) {
+                            if (cursor.value.userName === userName) allResults.push(cursor.value);
+                            cursor.continue();
+                        } else resolve(allResults.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
+                    };
+                    request.onerror = e => reject('Fetch Error: ' + e.target.error);
+                });
+            },
+             getAllResults: function() {
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction(['results'], 'readonly');
+                    const store = transaction.objectStore('results');
+                    const request = store.getAll();
+                    request.onsuccess = e => resolve(e.target.result.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
+                    request.onerror = e => reject('Fetch Error: ' + e.target.error);
+                });
+            }
+        };
+
+        function setupEventListeners() {
+            ui.startBtn.addEventListener('click', handleStart);
+            ui.nameInput.addEventListener('input', () => ui.nameInput.classList.remove('input-error'));
+            ui.langSelect.addEventListener('change', () => ui.langSelect.classList.remove('input-error'));
+            ui.startAimBtn.addEventListener('click', () => startAimTest());
+            ui.startMemoryBtn.addEventListener('click', () => startMemoryTest());
+            ui.startJigsawBtn.addEventListener('click', () => startJigsawTest());
+            aimUI.startTestBtn.addEventListener('click', runAimTest);
+            memoryUI.startTestBtn.addEventListener('click', runMemoryTest);
+            aimUI.target.addEventListener('click', handleTargetHit);
+            aimUI.area.addEventListener('click', handleTargetMiss);
+            ui.backToMenuBtn.addEventListener('click', () => showScreen('menu'));
+            ui.viewResultsBtn.addEventListener('click', showAllResults);
+            ui.downloadCsvBtn.addEventListener('click', downloadMyCsv);
+            ui.downloadAllBtn.addEventListener('click', downloadAllUserDataCsv);
+            memoryUI.memoryDisplayContainer.addEventListener('click', handleMemoryContainerClick);
+            
+            jigsawUI.backBtn.addEventListener('click', () => {
+                jigsawUI.embedContainer.innerHTML = ''; // Clear the iframe
+                showScreen('menu');
+            });
+            aimUI.backBtn.addEventListener('click', () => {
+                Music.stop();
+                showScreen('menu');
+            });
+             memoryUI.backBtn.addEventListener('click', () => {
+                Music.stop();
+                showScreen('menu');
+            });
+        }
+
+        function handleStart() {
+            const name = ui.nameInput.value.trim();
+            const lang = ui.langSelect.value;
+            let isValid = true;
+
+            if (!name) {
+                ui.nameInput.classList.add('input-error');
+                isValid = false;
+            } else {
+                ui.nameInput.classList.remove('input-error');
+            }
+
+            if (!lang) {
+                ui.langSelect.classList.add('input-error');
+                isValid = false;
+            } else {
+                ui.langSelect.classList.remove('input-error');
+            }
+
+            if (isValid) {
+                state.userName = name;
+                state.lang = lang;
+                ui.userNameDisplay.textContent = state.userName;
+                showScreen('menu');
+            }
+        }
+        
+        function handleMemoryContainerClick(e) {
+            if (e.target.tagName === 'INPUT') return;
+            if (!memoryUI.otpInputArea.classList.contains('hidden')) {
+                const inputs = [...memoryUI.otpInputArea.children].filter(el => el.tagName === 'INPUT');
+                if (inputs.length === 0) return;
+                const firstEmptyInput = inputs.find(input => input.value === '');
+                if (firstEmptyInput) firstEmptyInput.focus();
+                else inputs[inputs.length - 1].focus();
+            } else if (!memoryUI.numberDisplay.classList.contains('hidden')) {
+                memoryUI.keyboardActivator.focus();
+            }
+        }
+
+        // --- Aim Trainer Functions ---
+        let targetClickTime = 0;
+        function startAimTest() {
+            state.currentTest = 'aim';
+            showScreen('aim');
+            aimUI.startOverlay.style.display = 'flex';
+            aimUI.overlayInitialContent.classList.remove('hidden');
+            aimUI.countdownContainer.classList.add('hidden');
+            aimUI.target.style.display = 'none';
+            aimUI.countDisplay.textContent = `0 / ${AppConfig.AIM_TARGET_COUNT}`;
+        }
+        
+        function runAimTest() {
+            aimUI.overlayInitialContent.classList.add('hidden');
+            aimUI.countdownContainer.classList.remove('hidden');
+            let count = 3;
+            aimUI.countdown.textContent = count;
+            const interval = setInterval(() => {
+                count--;
+                if (count > 0) aimUI.countdown.textContent = count;
+                else {
+                    clearInterval(interval);
+                    aimUI.startOverlay.style.display = 'none';
+                    state.aimTestResults = [];
+                    aimUI.countDisplay.textContent = `1 / ${AppConfig.AIM_TARGET_COUNT}`;
+                    Music.play(state.lang);
+                    spawnTarget();
+                }
+            }, 1000);
+        }
+
+        function spawnTarget() {
+            aimUI.target.style.display = 'flex';
+            const areaRect = aimUI.area.getBoundingClientRect();
+            const targetSize = aimUI.target.offsetWidth;
+            const maxX = areaRect.width - targetSize, maxY = areaRect.height - targetSize;
+            const x = Math.random() * (maxX > 0 ? maxX : 0);
+            const y = Math.random() * (maxY > 0 ? maxY : 0);
+            aimUI.target.style.left = `${x}px`;
+            aimUI.target.style.top = `${y}px`;
+            targetClickTime = Date.now();
+        }
+
+        function handleTargetHit(e) {
+            e.stopPropagation();
+            const timeTaken = Date.now() - targetClickTime;
+            const accuracyScore = parseInt(e.target.dataset.score || 0);
+            state.aimTestResults.push({ speed: timeTaken, accuracy: accuracyScore });
+            checkAimTestEnd();
+        }
+
+        function handleTargetMiss(e) {
+            if (e.target === aimUI.area) {
+                const timeTaken = Date.now() - targetClickTime;
+                state.aimTestResults.push({ speed: timeTaken, accuracy: 0 });
+                checkAimTestEnd();
+            }
+        }
+
+        function checkAimTestEnd() {
+            if (state.aimTestResults.length < AppConfig.AIM_TARGET_COUNT) {
+                aimUI.countDisplay.textContent = `${state.aimTestResults.length + 1} / ${AppConfig.AIM_TARGET_COUNT}`;
+                spawnTarget();
+            } else endTest();
+        }
+        
+        // --- Memory Test Functions ---
+        let currentMemoryRound = 0, currentNumber = '', memoryStartTime = 0;
+
+        function startMemoryTest() {
+            state.currentTest = 'memory';
+            showScreen('memory');
+            memoryUI.startOverlay.style.display = 'block';
+            memoryUI.numberDisplay.textContent = '';
+            memoryUI.otpInputArea.classList.add('hidden');
+            memoryUI.numberDisplay.classList.remove('hidden');
+            memoryUI.timerDots.classList.add('invisible');
+        }
+
+        function runMemoryTest() {
+            memoryUI.startOverlay.style.display = 'none';
+            state.memoryTestResults = [];
+            currentMemoryRound = 0;
+            Music.play(state.lang);
+            runMemoryRound();
+        }
+
+        function runMemoryRound() {
+            currentMemoryRound++;
+            memoryStartTime = 0;
+            memoryUI.roundDisplay.textContent = `${currentMemoryRound} / ${AppConfig.MEMORY_ROUNDS}`;
+            memoryUI.otpInputArea.classList.add('hidden');
+            memoryUI.otpInputArea.innerHTML = '';
+            memoryUI.numberDisplay.classList.remove('hidden');
+            
+            const numDigits = AppConfig.MEMORY_STARTING_DIGITS + (currentMemoryRound - 1) * AppConfig.MEMORY_DIGIT_INCREMENT;
+            currentNumber = Array.from({ length: numDigits }, () => Math.floor(Math.random() * 10)).join('');
+            
+            memoryUI.numberDisplay.textContent = currentNumber.replace(/\B(?=(\d{3})+(?!\d))/g, "-");
+            memoryUI.keyboardActivator.focus();
+            
+            const dots = memoryUI.timerDots.querySelectorAll('.timer-dot');
+            dots.forEach(dot => dot.classList.remove('opacity-0'));
+            memoryUI.timerDots.classList.remove('invisible');
+
+            const totalDisplayTime = AppConfig.MEMORY_BASE_DISPLAY_TIME + numDigits * AppConfig.MEMORY_TIME_PER_DIGIT;
+            const dotInterval = totalDisplayTime / dots.length;
+
+            for (let i = 0; i < dots.length; i++) {
+                setTimeout(() => {
+                    const dotIndex = dots.length - 1 - i;
+                    if (dots[dotIndex]) dots[dotIndex].classList.add('opacity-0');
+                }, dotInterval * (i + 1));
+            }
+            setTimeout(() => {
+                memoryUI.numberDisplay.classList.add('hidden');
+                memoryUI.timerDots.classList.add('invisible');
+                createOtpInputs(currentNumber.length);
+            }, totalDisplayTime);
+        }
+
+        function createOtpInputs(count) {
+            memoryUI.otpInputArea.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                if (i > 0 && i % 3 === 0) {
+                    const dash = document.createElement('span');
+                    dash.className = 'flex-shrink-0 w-4 flex items-center justify-center text-3xl md:text-4xl font-mono text-gray-400';
+                    dash.textContent = '-';
+                    memoryUI.otpInputArea.appendChild(dash);
+                }
+                const input = document.createElement('input');
+                input.type = 'tel'; input.maxLength = 1; input.inputMode = 'numeric'; input.pattern = '[0-9]*';
+                input.className = 'flex-1 min-w-0 max-w-[3rem] h-14 md:h-16 text-center text-2xl md:text-3xl font-mono border border-[#D7CEC5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6750A4]';
+                input.addEventListener('input', handleOtpInput);
+                input.addEventListener('keydown', handleOtpKeydown);
+                memoryUI.otpInputArea.appendChild(input);
+            }
+            memoryUI.otpInputArea.classList.remove('hidden');
+            const firstInput = memoryUI.otpInputArea.querySelector('input');
+            if(firstInput) firstInput.focus();
+        }
+
+        function handleOtpInput(e) {
+            if (memoryStartTime === 0) memoryStartTime = Date.now();
+            const input = e.target;
+            if (input.value.match(/^[0-9]$/)) {
+                let next = input.nextElementSibling;
+                if (next && next.tagName === 'SPAN') next = next.nextElementSibling;
+                if (next) next.focus();
+            }
+        }
+
+        function handleOtpKeydown(e) {
+            if (e.key === 'Backspace' && e.target.value === '') {
+                let prev = e.target.previousElementSibling;
+                if (prev && prev.tagName === 'SPAN') prev = prev.previousElementSibling;
+                if (prev) prev.focus();
+            } else if (e.key === 'Enter') checkMemoryAnswer();
+        }
+
+        function checkMemoryAnswer() {
+            if (memoryUI.otpInputArea.dataset.checking === 'true') return;
+            memoryUI.otpInputArea.dataset.checking = 'true';
+
+            const allInputs = [...memoryUI.otpInputArea.children].filter(el => el.tagName === 'INPUT');
+            const timeTaken = Date.now() - (memoryStartTime || Date.now());
+            let correctDigits = 0;
+            
+            for (let i = 0; i < currentNumber.length; i++) {
+                if (allInputs[i] && allInputs[i].value === currentNumber[i]) correctDigits++;
+            }
+            const accuracy = currentNumber.length > 0 ? (correctDigits / currentNumber.length) : 0;
+            state.memoryTestResults.push({ speed: timeTaken, accuracy: accuracy, digits: currentNumber.length, correctDigits: correctDigits });
+
+            setTimeout(() => {
+                if (currentMemoryRound < AppConfig.MEMORY_ROUNDS) runMemoryRound();
+                else endTest();
+                memoryUI.otpInputArea.dataset.checking = 'false';
+            }, 250);
+        }
+
+        // --- Jigsaw Puzzle Functions ---
+        function startJigsawTest() {
+            state.currentTest = 'jigsaw';
+            const embedUrls = [
+                "https://puzzleme.amuselabs.com/pmm/jigsaw?id=b9a74334&set=e5be2f29555f0b9157d1936275ff5b69cee8c5c5198c9d48b300dca4f0df5a7f&embed=1",
+                "https://puzzleme.amuselabs.com/pmm/jigsaw?id=e3ca82a8&set=e5be2f29555f0b9157d1936275ff5b69cee8c5c5198c9d48b300dca4f0df5a7f&embed=1",
+                "https://puzzleme.amuselabs.com/pmm/jigsaw?id=73f650df&set=e5be2f29555f0b9157d1936275ff5b69cee8c5c5198c9d48b300dca4f0df5a7f&embed=1"
+            ];
+            
+            const randomUrl = embedUrls[Math.floor(Math.random() * embedUrls.length)];
+            
+            jigsawUI.embedContainer.innerHTML = ''; // Clear previous iframe
+            
+            const iframe = document.createElement('iframe');
+            iframe.src = randomUrl;
+            iframe.setAttribute('allow', 'web-share; fullscreen');
+            iframe.setAttribute('aria-label', 'Puzzle Me Game');
+            
+            jigsawUI.embedContainer.appendChild(iframe);
+            showScreen('jigsaw');
+        }
+
+        // --- General Test & Results Functions ---
+        async function endTest() {
+            Music.stop();
+            const resultData = {
+                userName: state.userName,
+                language: state.lang,
+                testType: state.currentTest,
+                timestamp: new Date().toISOString(),
+            };
+            let html = '';
+
+            if (state.currentTest === 'aim') {
+                const avgSpeed = state.aimTestResults.reduce((a, r) => a + r.speed, 0) / state.aimTestResults.length;
+                const totalScore = state.aimTestResults.reduce((a, r) => a + r.accuracy, 0);
+                const maxScore = AppConfig.AIM_TARGET_COUNT * 3;
+                const scorePct = maxScore > 0 ? (totalScore / maxScore) * 100 : 0;
+                resultData.results = state.aimTestResults;
+                resultData.summary = { avgSpeed: avgSpeed.toFixed(2), totalScore, maxScore, scorePercentage: scorePct.toFixed(2) };
+                html = `<h3 class="text-2xl font-semibold text-center mb-4">Aim Trainer Complete!</h3>
+                        <p class="text-xl text-center">Average Time: <span class="font-bold">${avgSpeed.toFixed(2)} ms</span></p>
+                        <p class="text-xl text-center">Score: <span class="font-bold">${totalScore}/${maxScore} (${scorePct.toFixed(2)}%)</span></p>`;
+                await Database.saveResult(resultData);
+            } else if (state.currentTest === 'memory') {
+                 const totalCorrectDigits = state.memoryTestResults.reduce((acc, r) => acc + r.correctDigits, 0);
+                 const totalDigitsShown = state.memoryTestResults.reduce((acc, r) => acc + r.digits, 0);
+                 const overallAccuracy = totalDigitsShown > 0 ? (totalCorrectDigits / totalDigitsShown * 100) : 0;
+                 resultData.results = state.memoryTestResults;
+                 resultData.summary = { totalCorrectDigits, totalDigitsShown, overallAccuracy: overallAccuracy.toFixed(2) };
+                 html = `<h3 class="text-2xl font-semibold text-center mb-4">Number Memory Complete!</h3>
+                         <p class="text-xl text-center">Overall Accuracy: <span class="font-bold">${overallAccuracy.toFixed(2)}%</span></p>
+                         <p class="text-lg text-center text-gray-600 mt-2">You remembered <span class="font-semibold">${totalCorrectDigits}</span> out of <span class="font-semibold">${totalDigitsShown}</span> digits correctly.</p>`;
+                await Database.saveResult(resultData);
+            }
+            
+            ui.resultsContent.innerHTML = html;
+            showScreen('results');
+        }
+
+        async function showAllResults() {
+            const results = await Database.getResults(state.userName);
+            let html = '<h3 class="text-2xl font-semibold text-center mb-4">Your History</h3>';
+            const savedTests = results.filter(res => res.testType !== 'jigsaw');
+
+            if (savedTests.length === 0) {
+                html += '<p class="text-center text-gray-500">No results found. Complete a test to see your history!</p>';
+            } else {
+                html += '<div class="space-y-6">';
+                savedTests.forEach(res => {
+                    const date = new Date(res.timestamp).toLocaleString();
+                    html += `<div class="p-4 bg-gray-50 rounded-lg border">`;
+                    if (res.testType === 'aim') {
+                        html += `<p class="font-bold text-lg">Aim Trainer</p><p class="text-sm text-gray-500">${date}</p>
+                                 <p class="mt-2">Avg. Speed: <span class="font-semibold">${res.summary.avgSpeed} ms</span> | Score: <span class="font-semibold">${res.summary.totalScore}/${res.summary.maxScore}</span></p>`;
+                    } else if (res.testType === 'memory') {
+                        html += `<p class="font-bold text-lg">Number Memory</p><p class="text-sm text-gray-500">${date}</p>
+                                 <p class="mt-2">Accuracy: <span class="font-semibold">${res.summary.overallAccuracy}%</span> | Correct: <span class="font-semibold">${res.summary.totalCorrectDigits} / ${res.summary.totalDigitsShown}</span></p>`;
+                    }
+                    html += `</div>`;
+                });
+                html += '</div>';
+            }
+            ui.resultsContent.innerHTML = html;
+            showScreen('results');
+        }
+
+        function downloadCsv(results, baseFileName) {
+            const headers = [
+                "name", "language", "test", "aim trial round", "time to hit aim", "time to hit aim cumulative", 
+                "aim score", "aim score cumulative", "total possible aim score", "number trial round", 
+                "time to enter number", "time to enter number cumulative", "digits correct", 
+                "digits correct cumulative", "digits this round", "total possible correct digits"
+            ];
+            let csvRows = [headers.join(',')];
+
+            results.forEach(session => {
+                if (session.testType === 'aim' && session.results) {
+                    let timeCumulative = 0;
+                    let scoreCumulative = 0;
+                    
+                    session.results.forEach((trial, index) => {
+                        timeCumulative += trial.speed;
+                        scoreCumulative += trial.accuracy;
+                        const possibleScoreCumulative = (index + 1) * 3;
+                        
+                        const row = [
+                            `"${session.userName}"`, session.language, session.testType, index + 1, trial.speed, timeCumulative,
+                            trial.accuracy, scoreCumulative, possibleScoreCumulative, 'N/A', 'N/A', 'N/A',
+                            'N/A', 'N/A', 'N/A', 'N/A'
+                        ];
+                        csvRows.push(row.join(','));
+                    });
+                } else if (session.testType === 'memory' && session.results) {
+                    let timeCumulative = 0;
+                    let correctCumulative = 0;
+                    let totalDigitsCumulative = 0;
+
+                    session.results.forEach((trial, index) => {
+                        timeCumulative += trial.speed;
+                        correctCumulative += trial.correctDigits;
+                        totalDigitsCumulative += trial.digits;
+
+                        const row = [
+                           `"${session.userName}"`, session.language, session.testType, 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A',
+                           index + 1, trial.speed, timeCumulative, trial.correctDigits,
+                           correctCumulative, trial.digits, totalDigitsCumulative
+                        ];
+                        csvRows.push(row.join(','));
+                    });
+                }
+                // Jigsaw data is explicitly ignored
+            });
+
+            const csvContent = csvRows.join('\r\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `${baseFileName}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        async function downloadMyCsv() {
+            const results = await Database.getResults(state.userName);
+            downloadCsv(results, `${state.userName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_performance_data`);
+        }
+
+        async function downloadAllUserDataCsv() {
+            const results = await Database.getAllResults();
+            downloadCsv(results, 'all_users_performance_data');
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await Database.init();
+            setupEventListeners();
+            showScreen('welcome');
+        });
+    </script>
+</body>
+</html>
+
+
